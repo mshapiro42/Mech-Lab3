@@ -2,7 +2,7 @@
  * Mech-Lab2.c
  *
  * Created: 2/12/2020 1:14:53 PM
- * Author : Megan Shapiro
+ * Author : Anna Corman, Joslyne Lovelace, Megan Shapiro
  */ 
 
 #define F_CPU 16000000L //Clock speed of Arduino 16 MHz
@@ -20,12 +20,9 @@
 #include "Serial.h"
 #include "Ring_Buffer.h"
 #include "Digital_Filter.h"
+#include "Timers.h"
+#include "ADC.h"
 
-
-void timer0_init();
-void timer1_init();
-void adc_init();
-uint16_t adc_read(uint8_t ch);
 /*
 union floatChars {
 	float asFloat;
@@ -38,8 +35,8 @@ int main(void)
 	USART_Init(MYUBRR);
     //rb_initialize_C(&output_queue);
 
-	timer0_init();
-	timer1_init();
+	timer0_init(1024,155);
+	timer1_init(0,15999);
 	adc_init();
 	//digital_filter_init(0);
 	
@@ -106,50 +103,4 @@ int main(void)
 			print_byte(rb_pop_front_C(&output_queue));
 		}*/
     }
-}
-
-void timer0_init()
-{	
-	// enable CTC for Timer0
-	TCCR0A |= (1 << WGM01);
-	// enable prescaler of 1024 for Timer0
-	TCCR0B |= (1 << CS02)|(1 << CS00);	
-	// initialize counter to zero
-	TCNT0 = 0;	
-	// initialize compare value for CTC
-	OCR0A = 155;
-}
-
-void timer1_init()
-{
-	TCCR1A |= 0;
-	// Enable CTC for Timer1 with no prescaler
-	TCCR1B |= (1 << WGM12)|(1 << CS10);
-	// initialize counter to zero
-	TCNT1 = 0;	
-	// initialize compare value
-	OCR1B = 15999;
-}
-
-
-void adc_init() {
-	
-	//Set reference to built in channels
-	ADMUX = (1<<REFS0);
-	//Enable ADC w/ prescaler
-	ADCSRA = (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0);
-	
-}
-
-uint16_t adc_read(uint8_t ch)
-{
-	//select channel to read
-	ch &= 0b00000111;
-	ADMUX = (ADMUX & 0xF8)|ch;	
-	//start conversion
-	ADCSRA |= (1<<ADSC);	
-	//wait for conversion to complete
-	while(ADCSRA & (1<<ADSC));	
-	//return result
-	return (ADC);
 }
