@@ -23,6 +23,8 @@
 #include "Timers.h"
 #include "ADC.h"
 
+void fastPWM_init();
+
 /*
 union floatChars {
 	float asFloat;
@@ -37,6 +39,7 @@ int main(void)
 
 	timer0_init(1024,155);
 	timer1_init(0,15999);
+	fastPWM_init();
 	adc_init();
 	//digital_filter_init(0);
 	
@@ -54,14 +57,46 @@ int main(void)
 	//float angVel = 0;
 	//float filteredVel = 0;
 	//union floatChars printVal;
+	//int vel_des[3] = [24, 0, -24];
+	int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
+	//enum State {stateCur, stateLast};
+	enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
 	float convertCoeff[] = {-354.5305, 7.2116, -0.0543, 1.9698E-4, -3.5356E-7, 3.0609E-10, -1.0193E-13};
 	float tempSum;
 
     while (1) 
     {
+		//if TIMER2 reaches max, probably a better way to do this, worried this will get missed
+		if(TCNT2 == 255) 
+		{
+			//Reset Flag
+			TIFR2 |= (1 << OCF2A);
+		}
 		//if TIMER0_flag
 		if(TIFR0 & (1 << OCF0A))
 		{
+			timer0Count++;
+			if(timer0Count == 10)
+			{
+				// 0 means stop, 1 means CW, 2 means CCW
+				if(stateCur == 0 && stateLast == 1)
+				{
+					stateLast = stateCur;
+					stateCur = CCW;
+					//set newPWM with vel_des[2]
+				} else if(stateCur == 0 && stateLast == 2)
+				{
+					stateLast = stateCur;
+					stateCur = CW;
+					//set new PWM with vel_des[0]
+				} else
+				{
+					stateLast = stateCur;
+					stateCur = STOP;
+					//set new PWM with vel_des[1]
+				}
+				timer0Count = 0;
+			}
 			/*printVal.asFloat = 500; //edit so we don't drop readings during prints
 			printVal.asFloat = angPos;
 			for(int i = 0; i < 4; i ++){
@@ -103,4 +138,11 @@ int main(void)
 			print_byte(rb_pop_front_C(&output_queue));
 		}*/
     }
+}
+
+void fastPWM_init()
+{
+	// set Fast PWM mode on Timer 2
+	TCCR2A |= (1 << WGM20)|(1 << WGM21);
+	TCCR2B |= (1 << WGM22);
 }
