@@ -18,7 +18,7 @@
 /******* Functions ********/
 
 //Initialize our digital filter and its variables
-void digital_filter_init(float reading);
+void digital_filter_init();
 
 // Return the filtered value
 float filterValue(float angularVelocity);

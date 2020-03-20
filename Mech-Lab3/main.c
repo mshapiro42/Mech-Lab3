@@ -24,6 +24,7 @@
 #include "ADC.h"
 
 void fastPWM_init();
+void setNewPWM(int vel_des);
 
 /*
 union floatChars {
@@ -41,59 +42,62 @@ int main(void)
 	timer1_init(0,15999);
 	fastPWM_init();
 	adc_init();
-	//digital_filter_init(0);
+	digital_filter_init(0);
 	
 	//Set AI0 to Output and rest as Input
 	DDRC |= 0b00000001;
+	//Set pin 11,13, and 8 as output for PWM, Dir, and enable, respectively
+	DDRB |= 0b00101001;
 	
 	//Set output to 1 to power sensor
 	PORTC |= 0b00000001;
+	//Set enable pin as high
+	PORTB |= 0b00000001;
 	
 	//Sampling frequency for converting to velocity, 1/0.001
-	//float sampPer = 1000;
+	float sampPer = 1000;
 	float volt = 0;
 	float angPos = 0;
-	//float angPosLast = 0;
-	//float angVel = 0;
-	//float filteredVel = 0;
+	float angPosLast = 0;
+	float angVel = 0;
+	float filteredVel = 0;
 	//union floatChars printVal;
-	//int vel_des[3] = [24, 0, -24];
+	int vel_des[3] = {24, 0, -24};
 	int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
-	//enum State {stateCur, stateLast};
 	enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
 	float convertCoeff[] = {-354.5305, 7.2116, -0.0543, 1.9698E-4, -3.5356E-7, 3.0609E-10, -1.0193E-13};
 	float tempSum;
+	float voltTemp = 0;
+	int duty = 200;
 
     while (1) 
     {
-		//if TIMER2 reaches max, probably a better way to do this, worried this will get missed
-		if(TCNT2 == 255) 
-		{
-			//Reset Flag
-			TIFR2 |= (1 << OCF2A);
-		}
+		OCR2A = duty; // deadband at about 10
 		//if TIMER0_flag
 		if(TIFR0 & (1 << OCF0A))
 		{
 			timer0Count++;
-			if(timer0Count == 10)
+			if(timer0Count == 50)
 			{
-				// 0 means stop, 1 means CW, 2 means CCW
+				// Check for next action
 				if(stateCur == 0 && stateLast == 1)
 				{
 					stateLast = stateCur;
 					stateCur = CCW;
-					//set newPWM with vel_des[2]
+					setNewPWM(vel_des[2]); 
+					duty = 200;
 				} else if(stateCur == 0 && stateLast == 2)
 				{
 					stateLast = stateCur;
 					stateCur = CW;
-					//set new PWM with vel_des[0]
+					setNewPWM(vel_des[0]);
+					duty = 200;
 				} else
 				{
 					stateLast = stateCur;
 					stateCur = STOP;
-					//set new PWM with vel_des[1]
+					setNewPWM(vel_des[1]);
+					duty = 0;
 				}
 				timer0Count = 0;
 			}
@@ -102,7 +106,7 @@ int main(void)
 			for(int i = 0; i < 4; i ++){
 				rb_push_back_C(&output_queue, printVal.asChars[i]);
 			}*/
-			print_float(angPos);
+			print_float(filteredVel);
 			//reset TIMER0_flag
 			TIFR0 |= (1 << OCF0A);
 		}
@@ -111,25 +115,25 @@ int main(void)
 		{
 			//read voltage 
 			volt = adc_read(1);	
-			
+			voltTemp = volt;
 			//convert to position in radians
 			tempSum = convertCoeff[0];
 			// Apply 6th order best fit line found in Matlab
 			for (int i = 1; i <= 6; i++){
-				tempSum += convertCoeff[i]*volt;
-				volt *= volt;
+				tempSum += convertCoeff[i]*voltTemp;
+				voltTemp *= volt;
 			}
 			//wrap result
 			angPos = tempSum;
 
 			//convert to velocity
-			//angVel = (angPos - angPosLast) *0.00277778*sampPer; // rev/s
+			angVel = (angPos - angPosLast) *0.00277778*sampPer; // rev/s
 			
 			//add angPos to queue
-			//angPosLast = angPos;
+			angPosLast = angPos;
 			
 			//filter velocity
-			//filteredVel = filterValue(angVel);
+			filteredVel = filterValue(angVel);
 			
 			//reset TIMER1_flag
 			TIFR1 |= (1 << OCF1A);
@@ -142,7 +146,21 @@ int main(void)
 
 void fastPWM_init()
 {
-	// set Fast PWM mode on Timer 2
-	TCCR2A |= (1 << WGM20)|(1 << WGM21);
-	TCCR2B |= (1 << WGM22);
+	// set Fast PWM mode on Timer 2 non-inverting (just add (1 << COM2A0) for inverting
+	TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);
+	TCCR2B |= (1 << CS20)|(1 << CS21)|(1 << CS22);
+}
+
+void setNewPWM(int vel_des)
+{
+	if(vel_des > 0)
+	{
+		PORTB |= 0b00000001;
+		TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);
+	}
+	else if (vel_des > 0)
+	{
+		PORTB |= 0b00100001;
+		TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1)|(1 << COM2A0);
+	}
 }

@@ -50,7 +50,7 @@ void timer1_init(int prescaler,int compVal)
 	// initialize counter to zero
 	TCNT1 = 0;
 	// initialize compare value
-	OCR1A = compVal;
+	OCR1B = compVal;
 }
 
 void timer2_init(int prescaler,int compVal)
