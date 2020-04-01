@@ -26,10 +26,11 @@ void digital_filter_init(){
 }
 
 float filterValue(float newInput){
+	wrapPos(newInput);
 	rb_pop_back_F(&inputs);
 	rb_push_front_F(&inputs, newInput);
 	float newOutput = 0.0;
-	for(i=0; i <= 4; i++){	
+	for(i=0; i <= order; i++){	
 		newOutput += b[i]*rb_get_F(&inputs,i);
 		if (i>0){
 			newOutput -= a[i]*rb_get_F(&outputs,i-1);
@@ -39,4 +40,24 @@ float filterValue(float newInput){
 	rb_pop_back_F(&outputs);
 	rb_push_front_F(&outputs, newOutput);
 	return newOutput;
+}
+
+void wrapPos(float newInput)
+{
+	if(rb_get_F(&outputs,0) - newInput > 180)
+	{
+		for(int i = 0; i <= rb_length_F(&outputs); i++)
+		{
+			rb_set_F(&inputs, i, rb_get_F(&inputs, i) - 360);
+			rb_set_F(&outputs, i, rb_get_F(&outputs, i) - 360);
+		}
+	}
+	else if(rb_get_F(&outputs,0) - newInput < -180)
+	{
+		for(int i = 0; i <= rb_length_F(&outputs); i++)
+		{
+			rb_set_F(&inputs, i, rb_get_F(&inputs, i) + 360);
+			rb_set_F(&outputs, i, rb_get_F(&outputs, i) + 360);
+		}
+	}
 }

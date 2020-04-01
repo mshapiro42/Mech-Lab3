@@ -60,15 +60,15 @@ int main(void)
 	float angPos = 0;
 	float angPosLast = 0;
 	float angVel = 0;
-	float filteredVel = 0;
+	float filteredPos = 0;
 	//union floatChars printVal;
-	int vel_des[3] = {24, 0, -24};
-	int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
-	enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
+	//int vel_des[3] = {24, 0, -24};
+	//int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
+	//enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
 	float convertCoeff[] = {-354.5305, 7.2116, -0.0543, 1.9698E-4, -3.5356E-7, 3.0609E-10, -1.0193E-13};
 	float tempSum;
 	float voltTemp = 0;
-	int duty = 200;
+	int duty = 100;
 
     while (1) 
     {
@@ -85,13 +85,13 @@ int main(void)
 					stateLast = stateCur;
 					stateCur = CCW;
 					setNewPWM(vel_des[2]); 
-					duty = 200;
+					duty = 50;
 				} else if(stateCur == 0 && stateLast == 2)
 				{
 					stateLast = stateCur;
 					stateCur = CW;
 					setNewPWM(vel_des[0]);
-					duty = 200;
+					duty = 50;
 				} else
 				{
 					stateLast = stateCur;
@@ -106,7 +106,7 @@ int main(void)
 			for(int i = 0; i < 4; i ++){
 				rb_push_back_C(&output_queue, printVal.asChars[i]);
 			}*/
-			print_float(filteredVel);
+			print_float(angVel);
 			//reset TIMER0_flag
 			TIFR0 |= (1 << OCF0A);
 		}
@@ -126,14 +126,18 @@ int main(void)
 			//wrap result
 			angPos = tempSum;
 
+			//filter position
+			filteredPos = filterValue(angPos);
+			
 			//convert to velocity
-			angVel = (angPos - angPosLast) *0.00277778*sampPer; // rev/s
+			//angVel = (angPos - angPosLast) *0.00277778*sampPer; // rev/s
+			angVel = (filteredPos - angPosLast) *sampPer; // deg/s
 			
 			//add angPos to queue
-			angPosLast = angPos;
+			angPosLast = filteredPos;
 			
 			//filter velocity
-			filteredVel = filterValue(angVel);
+			//filteredVel = filterValue(angVel);
 			
 			//reset TIMER1_flag
 			TIFR1 |= (1 << OCF1A);
@@ -156,11 +160,11 @@ void setNewPWM(int vel_des)
 	if(vel_des > 0)
 	{
 		PORTB |= 0b00000001;
-		TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);
+		//TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);
 	}
 	else if (vel_des > 0)
 	{
 		PORTB |= 0b00100001;
-		TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1)|(1 << COM2A0);
+		//TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1)|(1 << COM2A0);
 	}
 }
