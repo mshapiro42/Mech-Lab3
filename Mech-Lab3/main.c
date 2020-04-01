@@ -68,7 +68,7 @@ int main(void)
 	float convertCoeff[] = {-354.5305, 7.2116, -0.0543, 1.9698E-4, -3.5356E-7, 3.0609E-10, -1.0193E-13};
 	float tempSum;
 	float voltTemp = 0;
-	int duty = 100;
+	int duty = 50;
 
     while (1) 
     {
@@ -76,7 +76,7 @@ int main(void)
 		//if TIMER0_flag
 		if(TIFR0 & (1 << OCF0A))
 		{
-			timer0Count++;
+			/*timer0Count++;
 			if(timer0Count == 50)
 			{
 				// Check for next action
@@ -100,7 +100,7 @@ int main(void)
 					duty = 0;
 				}
 				timer0Count = 0;
-			}
+			}*/
 			/*printVal.asFloat = 500; //edit so we don't drop readings during prints
 			printVal.asFloat = angPos;
 			for(int i = 0; i < 4; i ++){

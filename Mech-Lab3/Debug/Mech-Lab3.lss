@@ -149,7 +149,7 @@ uint16_t adc_read(uint8_t ch) {
   da:	08 95       	ret
 
 000000dc <digital_filter_init>:
-float a[5] = {1.000000000000000,  -1.570398851228171,  1.275613324983279, -0.484403368335085, 0.076197064610332};
+float a[5] = {1.000000000000000,  -3.671729089161935, 5.067998386734189, -3.115966925201744, 0.719910327291871};	
 uint8_t i;
 
 /* Initialization */
@@ -399,7 +399,7 @@ float filterValue(float newInput){
  26c:	91 e0       	ldi	r25, 0x01	; 1
  26e:	0e 94 b7 02 	call	0x56e	; 0x56e <rb_push_front_F>
 	float newOutput = 0.0;
-	for(i=0; i <= order; i++){	
+	for(i=0; i <= 4; i++){	
  272:	10 92 44 01 	sts	0x0144, r1	; 0x800144 <__data_end>
  276:	60 e0       	ldi	r22, 0x00	; 0
  278:	c1 2c       	mov	r12, r1
@@ -472,7 +472,7 @@ float filterValue(float newInput){
 	rb_pop_back_F(&inputs);
 	rb_push_front_F(&inputs, newInput);
 	float newOutput = 0.0;
-	for(i=0; i <= order; i++){	
+	for(i=0; i <= 4; i++){	
  302:	60 91 44 01 	lds	r22, 0x0144	; 0x800144 <__data_end>
  306:	6f 5f       	subi	r22, 0xFF	; 255
  308:	60 93 44 01 	sts	0x0144, r22	; 0x800144 <__data_end>
@@ -723,7 +723,7 @@ int main(void)
  45a:	1a a2       	std	Y+34, r1	; 0x22
  45c:	1b a2       	std	Y+35, r1	; 0x23
 	float voltTemp = 0;
-	int duty = 100;
+	int duty = 50;
 
     while (1) 
     {
@@ -734,7 +734,7 @@ int main(void)
  464:	51 2c       	mov	r5, r1
  466:	f0 2d       	mov	r31, r0
  468:	0f 2e       	mov	r0, r31
- 46a:	f4 e6       	ldi	r31, 0x64	; 100
+ 46a:	f2 e3       	ldi	r31, 0x32	; 50
  46c:	3f 2e       	mov	r3, r31
  46e:	f0 2d       	mov	r31, r0
  470:	3e 01       	movw	r6, r28
