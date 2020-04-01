@@ -62,9 +62,9 @@ int main(void)
 	float angVel = 0;
 	float filteredPos = 0;
 	//union floatChars printVal;
-	//int vel_des[3] = {24, 0, -24};
-	//int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
-	//enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
+	int vel_des[3] = {24, 0, -24};
+	int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
+	enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
 	float convertCoeff[] = {-354.5305, 7.2116, -0.0543, 1.9698E-4, -3.5356E-7, 3.0609E-10, -1.0193E-13};
 	float tempSum;
 	float voltTemp = 0;
@@ -76,8 +76,8 @@ int main(void)
 		//if TIMER0_flag
 		if(TIFR0 & (1 << OCF0A))
 		{
-			/*timer0Count++;
-			if(timer0Count == 50)
+			timer0Count++;
+			if(timer0Count == 100)
 			{
 				// Check for next action
 				if(stateCur == 0 && stateLast == 1)
@@ -100,7 +100,7 @@ int main(void)
 					duty = 0;
 				}
 				timer0Count = 0;
-			}*/
+			}
 			/*printVal.asFloat = 500; //edit so we don't drop readings during prints
 			printVal.asFloat = angPos;
 			for(int i = 0; i < 4; i ++){
@@ -159,12 +159,12 @@ void setNewPWM(int vel_des)
 {
 	if(vel_des > 0)
 	{
-		PORTB |= 0b00000001;
-		//TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);
+		PORTB |= (1 << PINB5);
+		TCCR2A &= ~(1 << COM2A0);
 	}
 	else if (vel_des > 0)
 	{
-		PORTB |= 0b00100001;
-		//TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1)|(1 << COM2A0);
+		PORTB |= (1 << PINB5);
+		TCCR2A |= (1 << COM2A0);
 	}
 }
