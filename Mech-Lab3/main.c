@@ -62,13 +62,14 @@ int main(void)
 	float angVel = 0;
 	float filteredPos = 0;
 	//union floatChars printVal;
-	int vel_des[3] = {24, 0, -24};
-	int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
-	enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
+	//int vel_des[3] = {24, 0, -24};
+	//int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
+	//enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
 	float convertCoeff[] = {-354.5305, 7.2116, -0.0543, 1.9698E-4, -3.5356E-7, 3.0609E-10, -1.0193E-13};
 	float tempSum;
 	float voltTemp = 0;
-	int duty = 50;
+	//int pwms[3] = {50, 0, 205};
+	int duty = 140;
 
     while (1) 
     {
@@ -76,31 +77,34 @@ int main(void)
 		//if TIMER0_flag
 		if(TIFR0 & (1 << OCF0A))
 		{
-			timer0Count++;
+			/*timer0Count++;
 			if(timer0Count == 50)
 			{
 				// Check for next action
-				if(stateCur == 0 && stateLast == 1)
+				if(stateCur == STOP && stateLast == CW)
 				{
 					stateLast = stateCur;
 					stateCur = CCW;
-					setNewPWM(vel_des[2]); 
-					duty = 50;
-				} else if(stateCur == 0 && stateLast == 2)
+					setNewPWM(vel_des[2]);
+					PORTB |= (1<<PINB0);
+					duty = pwms[0];
+				} else if(stateCur == STOP && stateLast == CCW)
 				{
 					stateLast = stateCur;
 					stateCur = CW;
 					setNewPWM(vel_des[0]);
-					duty = 50;
+					PORTB |= (1<<PINB0);
+					duty = pwms[2];
 				} else
 				{
 					stateLast = stateCur;
 					stateCur = STOP;
-					setNewPWM(vel_des[1]);
-					duty = 0;
+					//setNewPWM(vel_des[1]);
+					PORTB &= ~(1<<PINB0);
+					duty = pwms[1];
 				}
 				timer0Count = 0;
-			}
+			}*/
 			/*printVal.asFloat = 500; //edit so we don't drop readings during prints
 			printVal.asFloat = angPos;
 			for(int i = 0; i < 4; i ++){
@@ -151,7 +155,8 @@ int main(void)
 void fastPWM_init()
 {
 	// set Fast PWM mode on Timer 2 non-inverting (just add (1 << COM2A0) for inverting
-	TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);
+	TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);//|(1 << WGM22);
+	// 1024 pre-scaler
 	TCCR2B |= (1 << CS20)|(1 << CS21)|(1 << CS22);
 }
 
@@ -160,11 +165,9 @@ void setNewPWM(int vel_des)
 	if(vel_des > 0)
 	{
 		PORTB |= (1 << PINB5);
-		TCCR2A &= ~(1 << COM2A0);
 	}
 	else if (vel_des < 0)
 	{
 		PORTB &= ~(1 << PINB5);
-		TCCR2A |= (1 << COM2A0);
 	}
 }
