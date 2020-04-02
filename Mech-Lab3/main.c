@@ -77,7 +77,7 @@ int main(void)
 		if(TIFR0 & (1 << OCF0A))
 		{
 			timer0Count++;
-			if(timer0Count == 100)
+			if(timer0Count == 50)
 			{
 				// Check for next action
 				if(stateCur == 0 && stateLast == 1)
@@ -162,9 +162,9 @@ void setNewPWM(int vel_des)
 		PORTB |= (1 << PINB5);
 		TCCR2A &= ~(1 << COM2A0);
 	}
-	else if (vel_des > 0)
+	else if (vel_des < 0)
 	{
-		PORTB |= (1 << PINB5);
+		PORTB &= ~(1 << PINB5);
 		TCCR2A |= (1 << COM2A0);
 	}
 }
