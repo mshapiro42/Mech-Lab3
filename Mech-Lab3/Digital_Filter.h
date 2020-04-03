@@ -21,7 +21,7 @@
 void digital_filter_init();
 
 // Return the filtered value
-float filterValue(float angularVelocity);
+float filterValue(float newInput);
 
 // Wrap Value for Position
 void wrapPos(float newInput);

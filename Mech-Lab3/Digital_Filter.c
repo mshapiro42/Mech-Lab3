@@ -43,6 +43,7 @@ float filterValue(float newInput){
 	newOutput *= a[0];
 	rb_pop_back_F(&outputs);
 	rb_push_front_F(&outputs, newOutput);
+	newOutput = newOutput - rb_get_F(&outputs, 1);
 	return newOutput;
 }
 

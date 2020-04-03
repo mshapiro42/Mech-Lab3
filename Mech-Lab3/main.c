@@ -1,7 +1,7 @@
 /*
- * Mech-Lab2.c
+ * Mech-Lab3.c
  *
- * Created: 2/12/2020 1:14:53 PM
+ * Created: 4/3/2020 1:14:53 PM
  * Author : Anna Corman, Joslyne Lovelace, Megan Shapiro
  */ 
 
@@ -24,10 +24,10 @@
 #include "ADC.h"
 
 void fastPWM_init();
-void setNewPWM(int vel_des);
+int setNewPWM(int vel_des);
 
-/*
-union floatChars {
+
+/*union floatChars {
 	float asFloat;
 	char asChars[4];
 };*/
@@ -58,18 +58,17 @@ int main(void)
 	float sampPer = 1000;
 	float volt = 0;
 	float angPos = 0;
-	float angPosLast = 0;
+	//float angPosLast = 0;
 	float angVel = 0;
 	float filteredPos = 0;
 	//union floatChars printVal;
-	//int vel_des[3] = {24, 0, -24};
-	//int timer0Count = 0; //change to volatile if issues, I'm thinking the increment will keep this from being an issue though
-	//enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
+	int vel_des[2] = {24, -24};
+	int timer0Count = 0; //
+	enum states{STOP = 0, CW = 1, CCW = 2} stateCur = STOP, stateLast = CW;
 	float convertCoeff[] = {-354.5305, 7.2116, -0.0543, 1.9698E-4, -3.5356E-7, 3.0609E-10, -1.0193E-13};
 	float tempSum;
 	float voltTemp = 0;
-	//int pwms[3] = {50, 0, 205};
-	int duty = 140;
+	int duty = 0;
 
     while (1) 
     {
@@ -77,40 +76,37 @@ int main(void)
 		//if TIMER0_flag
 		if(TIFR0 & (1 << OCF0A))
 		{
-			/*timer0Count++;
-			if(timer0Count == 50)
+			//printVal.asFloat = 500; //edit so we don't drop readings during prints
+			/*printVal.asFloat = angVel;
+			for(int i = 0; i < 4; i ++){
+				rb_push_back_C(&output_queue, printVal.asChars[i]);
+			}*/
+			print_float(angVel);
+			timer0Count++;
+			if(timer0Count == 100)
 			{
 				// Check for next action
 				if(stateCur == STOP && stateLast == CW)
 				{
 					stateLast = stateCur;
 					stateCur = CCW;
-					setNewPWM(vel_des[2]);
+					duty = setNewPWM(vel_des[1]);
 					PORTB |= (1<<PINB0);
-					duty = pwms[0];
 				} else if(stateCur == STOP && stateLast == CCW)
 				{
 					stateLast = stateCur;
 					stateCur = CW;
-					setNewPWM(vel_des[0]);
+					duty = setNewPWM(vel_des[0]);
 					PORTB |= (1<<PINB0);
-					duty = pwms[2];
 				} else
 				{
 					stateLast = stateCur;
 					stateCur = STOP;
-					//setNewPWM(vel_des[1]);
 					PORTB &= ~(1<<PINB0);
-					duty = pwms[1];
 				}
 				timer0Count = 0;
-			}*/
-			/*printVal.asFloat = 500; //edit so we don't drop readings during prints
-			printVal.asFloat = angPos;
-			for(int i = 0; i < 4; i ++){
-				rb_push_back_C(&output_queue, printVal.asChars[i]);
-			}*/
-			print_float(angVel);
+			}
+
 			//reset TIMER0_flag
 			TIFR0 |= (1 << OCF0A);
 		}
@@ -134,14 +130,11 @@ int main(void)
 			filteredPos = filterValue(angPos);
 			
 			//convert to velocity
-			//angVel = (angPos - angPosLast) *0.00277778*sampPer; // rev/s
-			angVel = (filteredPos - angPosLast) *sampPer; // deg/s
+			//angVel = (filteredPos - angPosLast) *sampPer; // deg/s
+			angVel = filteredPos*sampPer;
 			
 			//add angPos to queue
-			angPosLast = filteredPos;
-			
-			//filter velocity
-			//filteredVel = filterValue(angVel);
+			//angPosLast = filteredPos;
 			
 			//reset TIMER1_flag
 			TIFR1 |= (1 << OCF1A);
@@ -155,19 +148,32 @@ int main(void)
 void fastPWM_init()
 {
 	// set Fast PWM mode on Timer 2 non-inverting (just add (1 << COM2A0) for inverting
-	TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);//|(1 << WGM22);
+	TCCR2A |= (1 << WGM20)|(1 << WGM21)|(1 << COM2A1);
 	// 1024 pre-scaler
 	TCCR2B |= (1 << CS20)|(1 << CS21)|(1 << CS22);
 }
 
-void setNewPWM(int vel_des)
+int setNewPWM(int vel_des)
 {
+	int PWM = round(0.0295*vel_des + 14.729);
+	//int PWM = round(0.0528*vel_des + 10.659);
+	if (PWM > 255)
+	{
+		PWM = 255;
+	}
+	if (PWM < 0)
+	{
+		PWM = 0;
+	}
 	if(vel_des > 0)
 	{
 		PORTB |= (1 << PINB5);
+		TCCR2A |= (1 << COM2A0);
 	}
 	else if (vel_des < 0)
 	{
 		PORTB &= ~(1 << PINB5);
+		TCCR2A &= ~(1 << COM2A0);
 	}
+	return PWM;
 }
